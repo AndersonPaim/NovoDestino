@@ -10,11 +10,18 @@ public class PlayerController : MonoBehaviour
     {
         DANCE1, DANCE2
     }
+    public enum JumpTypes
+    {
+        Double, Triple, lightGlide, heavyGlide
+    }
 
     [SerializeField] private GameObject _pivot;
     [SerializeField] private float _walkSpeed;
     [SerializeField] private float _runSpeed;
     [SerializeField] private float _jumpForce;
+    [SerializeField] private JumpTypes _currentJumpType;
+    [SerializeField] private float _lightGlideDrag;
+    [SerializeField] private float _heavyGlideDrag;
 
     private Animator _animator;
     private Rigidbody _rb;
@@ -22,6 +29,8 @@ public class PlayerController : MonoBehaviour
 
     private float _currentSpeed;
     private bool _isGrounded;
+    private bool _hasExtrajump;
+    private int _jumpCount = 1;
 
     private Dances _currentDance;
     //private Sequence _jumpSequence;
@@ -59,6 +68,10 @@ public class PlayerController : MonoBehaviour
     {
         Movement();
         _isGrounded = Physics.Raycast(transform.position, Vector3.down, 0.1f);
+        if (_isGrounded)
+        {
+            _rb.drag = 0;
+        }
     }
 
 
@@ -73,7 +86,7 @@ public class PlayerController : MonoBehaviour
 
         float nextPos = _pivot.transform.rotation.eulerAngles.x - mousePos.y;
 
-        if (nextPos >= 280 && nextPos < 360 || nextPos >= 0 && nextPos <= 80 || nextPos < 0)
+        if (nextPos >= 280 && nextPos < 360 || nextPos >= 0 && nextPos <= 80 || nextPos < 0 || nextPos > 360)
         {
             Vector3 rightRotation = Vector3.right * -mousePos.y;
             rightRotation.z = 0;
@@ -108,7 +121,7 @@ public class PlayerController : MonoBehaviour
         {
             Quaternion playerRotation = transform.rotation;
             Vector3 movementDirection = playerRotation * Vector3.forward;
-            newVelocity += -movementDirection * _currentSpeed * Time.deltaTime;
+            newVelocity += -movementDirection * _walkSpeed * Time.deltaTime;
         }
         if (Input.GetKey(KeyCode.A))
         {
@@ -123,14 +136,58 @@ public class PlayerController : MonoBehaviour
             newVelocity += movementDirection * _currentSpeed * Time.deltaTime;
         }
 
-        if (Input.GetKeyDown(KeyCode.Space) && _isGrounded)
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            _rb.AddForce(transform.up * _jumpForce, ForceMode.Impulse);
+            Jump(_currentJumpType);
         }
 
         _rb.velocity = newVelocity;
     }
 
+    private void Jump(JumpTypes jumpType)
+    {
+        if (_isGrounded)
+        {
+            _rb.AddForce(transform.up * _jumpForce, ForceMode.Impulse);
+            _hasExtrajump = true;
+            _jumpCount = 0;
+        }
+        else if (_hasExtrajump)
+        {
+            switch (jumpType)
+            {
+                case JumpTypes.Double:
+                    _rb.AddForce(transform.up * _jumpForce * 1.5f, ForceMode.Impulse);
+                    _hasExtrajump = false;
+                    break;
+                case JumpTypes.Triple:
+                    _rb.AddForce(transform.up * _jumpForce, ForceMode.Impulse);
+                    _jumpCount++;
+                    if (_jumpCount == 2)
+                    {
+                        _hasExtrajump = false;
+                    }
+                    break;
+                case JumpTypes.lightGlide:
+                    _rb.AddForce(transform.up * _jumpForce, ForceMode.Impulse);
+                    _rb.drag = _lightGlideDrag;
+                    _hasExtrajump = false;
+                    break;
+                case JumpTypes.heavyGlide:
+                    _rb.AddForce(transform.up * _jumpForce, ForceMode.Impulse);
+                    _rb.drag = _heavyGlideDrag;
+                    _hasExtrajump = false;
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
+        {
+            _rb.drag = 0;
+            _hasExtrajump = false;
+        }
+    }
     private void CancelDance()
     {
         _animator.SetBool(_currentDance.ToString(), false);
