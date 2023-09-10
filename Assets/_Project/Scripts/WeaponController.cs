@@ -16,6 +16,8 @@ public class WeaponController : MonoBehaviour
     [SerializeField] private GameObject _hipFireCrosshair;
     [SerializeField] private float _fireRate;
     [SerializeField] private float _magazine;
+    [SerializeField] private float _damage;
+    [SerializeField] private DamageType _damageType;
     [SerializeField] private TextMeshProUGUI _bulletsText;
 
     private Animator _animator;
@@ -58,7 +60,7 @@ public class WeaponController : MonoBehaviour
             //_bulletAudio.Play();
             bullet.transform.localPosition = _bulletPosition.transform.position;
             bullet.transform.localRotation = _bulletPosition.transform.rotation;
-            bullet.Shoot(_shootForce);
+            bullet.Shoot(_shootForce, _damage, _damageType);
             _shootParticle.Play();
             _bullets--;
             _bulletsText.text = _bullets.ToString();

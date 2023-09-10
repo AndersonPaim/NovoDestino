@@ -22,10 +22,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _lightGlideDrag;
     [SerializeField] private float _heavyGlideDrag;
     [SerializeField] private float _shootForce;
+    [SerializeField] private float _sensitivity;
     [SerializeField] private JumpTypes _currentJumpType;
+    [SerializeField] private Rigidbody _rb;
 
     private Animator _animator;
-    private Rigidbody _rb;
     private NewControls _input;
 
     private float _currentSpeed;
@@ -42,7 +43,6 @@ public class PlayerController : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
         _animator = GetComponent<Animator>();
-        _rb = GetComponent<Rigidbody>();
         _currentSpeed = _walkSpeed;
         _input = new NewControls();
         _input.Enable();
@@ -82,6 +82,7 @@ public class PlayerController : MonoBehaviour
         Vector2 mousePos = _input.Player.Look.ReadValue<Vector2>();
 
         Vector3 upRotation = Vector3.up * mousePos.x;
+        upRotation *= _sensitivity;
         upRotation.z = 0;
 
         gameObject.transform.Rotate(upRotation);
@@ -91,6 +92,7 @@ public class PlayerController : MonoBehaviour
         if (nextPos >= 280 && nextPos < 360 || nextPos >= 0 && nextPos <= 80 || nextPos < 0 || nextPos > 360)
         {
             Vector3 rightRotation = Vector3.right * -mousePos.y;
+            rightRotation *= _sensitivity;
             rightRotation.z = 0;
             _pivot.transform.Rotate(rightRotation);
         }
@@ -105,7 +107,7 @@ public class PlayerController : MonoBehaviour
         newVelocity.y = oldVelocity.y;
 
 
-        //TODO ATUALIZAR PARA O NOVO INPUT SYSTEM
+        //TODO ATUALIZAR PARA O NOVO INPUT
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
             _currentSpeed = _runSpeed;
