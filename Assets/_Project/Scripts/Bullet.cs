@@ -6,6 +6,8 @@ using UnityEngine;
 public class Bullet : MonoBehaviour
 {
     [SerializeField] private float _destroyTime;
+    [SerializeField] private ParticleSystem _hitParticle;
+    [SerializeField] private Collider _collider;
 
     private Rigidbody _rb;
 
@@ -24,6 +26,8 @@ public class Bullet : MonoBehaviour
 
     private void OnCollisionEnter(Collision other)
     {
-        Destroy(gameObject);
+        _hitParticle.Play();
+        _collider.enabled = false;
+        Destroy(gameObject, 1);
     }
 }

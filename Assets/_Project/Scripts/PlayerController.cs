@@ -14,8 +14,7 @@ public class PlayerController : MonoBehaviour
         Double, Triple, lightGlide, heavyGlide
     }
 
-    [SerializeField] private CinemachineVirtualCamera _eyeCamera;
-    [SerializeField] private CinemachineVirtualCamera _scopeCamera;
+    [SerializeField] private WeaponController _weaponController;
     [SerializeField] private GameObject _pivot;
     [SerializeField] private float _walkSpeed;
     [SerializeField] private float _runSpeed;
@@ -24,12 +23,6 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _heavyGlideDrag;
     [SerializeField] private float _shootForce;
     [SerializeField] private JumpTypes _currentJumpType;
-    [SerializeField] private ParticleSystem _shootParticle;
-    [SerializeField] private Bullet _bulletPrefab;
-    [SerializeField] private AudioSource _bulletAudio;
-    [SerializeField] private Transform _bulletPosition;
-    [SerializeField] private float _fireRate;
-    //[SerializeField] private Ease _jumpEase;
 
     private Animator _animator;
     private Rigidbody _rb;
@@ -38,21 +31,12 @@ public class PlayerController : MonoBehaviour
     private float _currentSpeed;
     private bool _isGrounded;
     private bool _hasExtrajump;
-    private bool _canShoot = true;
     private int _jumpCount = 1;
 
     private Dances _currentDance;
-    //private Sequence _jumpSequence;
 
-    public void ShootBullet()
-    {
-        Bullet bullet = Instantiate(_bulletPrefab);
-        //_bulletAudio.Play();
-        bullet.transform.localPosition = _bulletPosition.transform.position;
-        bullet.transform.localRotation = _bulletPosition.transform.rotation;
-        bullet.Shoot(_shootForce);
-        _shootParticle.Play();
-    }
+    public float Speed => _currentSpeed;
+    //private Sequence _jumpSequence;
 
     private void Start()
     {
@@ -63,11 +47,6 @@ public class PlayerController : MonoBehaviour
         _input = new NewControls();
         _input.Enable();
         _input.Player.Look.performed += _ => Rotate();
-        _input.Player.Shoot.started += _ => Shoot();
-        _input.Player.Shoot.canceled += _ => StopShoot();
-        _input.Player.Aim.performed += _ => Aim();
-        _input.Player.Aim.canceled += _ => StopAim();
-        _input.Player.Reload.performed += _ => Reload();
         _input.Player.Dance1.performed += _ => Dance(Dances.DANCE1);
         _input.Player.Dance2.performed += _ => Dance(Dances.DANCE2);
 
@@ -98,11 +77,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void Reload()
-    {
-        _animator.SetTrigger("Reload");
-    }
-
     private void Rotate()
     {
         Vector2 mousePos = _input.Player.Look.ReadValue<Vector2>();
@@ -122,36 +96,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void Aim()
-    {
-        _eyeCamera.Priority = 0;
-        _scopeCamera.Priority = 1;
-    }
-
-    private void StopAim()
-    {
-        _eyeCamera.Priority = 1;
-        _scopeCamera.Priority = 0;
-    }
-
-    private async void Shoot()
-    {
-        if(_canShoot)
-        {
-            float fireRate = (_fireRate / 60000) * 166;
-            _animator.SetFloat("FireRate", fireRate);
-            _animator.SetBool("Shoot", true);
-        }
-    }
-
-    private async void StopShoot()
-    {
-        _animator.SetBool("Shoot", false);
-        _canShoot = false;
-        await Task.Delay(100);
-        _canShoot = true;
-    }
-
     private void Movement()
     {
         _animator.SetFloat("Speed", _rb.velocity.magnitude);
@@ -160,13 +104,18 @@ public class PlayerController : MonoBehaviour
         Vector3 newVelocity = new Vector3();
         newVelocity.y = oldVelocity.y;
 
+
+        //TODO ATUALIZAR PARA O NOVO INPUT SYSTEM
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
             _currentSpeed = _runSpeed;
+            _animator.SetBool("IsRunning", true);
+            _weaponController.StopAim();
         }
         if (Input.GetKeyUp(KeyCode.LeftShift))
         {
             _currentSpeed = _walkSpeed;
+            _animator.SetBool("IsRunning", false);
         }
 
         if (Input.GetKey(KeyCode.W))
