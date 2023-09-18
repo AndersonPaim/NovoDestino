@@ -32,12 +32,11 @@ public class Bullet : MonoBehaviour
     {
         Debug.Log("COLLIDE");
         _hitParticle.Play();
-        _collider.enabled = false;
-        //Destroy(gameObject, 1);
+        // _collider.enabled = false;
 
         IDamageable damageable = other.GetComponent<IDamageable>();
 
-        if(damageable != null)
+        if (damageable != null)
         {
             damageable.ReceiveDamage(_damage, _damageType, transform.position);
         }

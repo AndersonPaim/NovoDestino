@@ -20,6 +20,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Knife _knife;
     [SerializeField] private float _walkSpeed;
     [SerializeField] private float _runSpeed;
+    [SerializeField] private float _airMultiplier;
     [SerializeField] private float _jumpForce;
     [SerializeField] private float _lightGlideDrag;
     [SerializeField] private float _heavyGlideDrag;
@@ -31,14 +32,15 @@ public class PlayerController : MonoBehaviour
     private Animator _animator;
     private NewControls _input;
 
-    private float _currentSpeed;
+    [SerializeField] private float _playerAcceleration;
+    private float _maxSpeed;
     private bool _isGrounded;
     private bool _hasExtrajump;
     private int _jumpCount = 1;
 
     private Dances _currentDance;
 
-    public float Speed => _currentSpeed;
+    public float Speed => _playerAcceleration;
     //private Sequence _jumpSequence;
 
     public void ThrowKnife()
@@ -53,7 +55,7 @@ public class PlayerController : MonoBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
         _animator = GetComponent<Animator>();
-        _currentSpeed = _walkSpeed;
+        _maxSpeed = _walkSpeed;
         _input = new NewControls();
         _input.Enable();
         _input.Player.Look.performed += _ => Rotate();
@@ -81,6 +83,7 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         Movement();
+        SpeedControl();
         _isGrounded = Physics.Raycast(transform.position, Vector3.down, 0.1f);
         if (_isGrounded)
         {
@@ -116,49 +119,21 @@ public class PlayerController : MonoBehaviour
 
     private void Movement()
     {
-        _animator.SetFloat("Speed", _rb.velocity.magnitude);
-        _animator.SetFloat("Direction", _rb.velocity.z);
-        Vector3 oldVelocity = _rb.velocity;
-        Vector3 newVelocity = new Vector3();
-        newVelocity.y = oldVelocity.y;
+        float horizontalInput = Input.GetAxisRaw("Horizontal");
+        float verticalInput = Input.GetAxisRaw("Vertical");
 
+        Vector3 direction = gameObject.transform.forward * verticalInput + gameObject.transform.right * horizontalInput;
 
-        //TODO ATUALIZAR PARA O NOVO INPUT
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
-            _currentSpeed = _runSpeed;
+            _maxSpeed = _runSpeed;
             _animator.SetBool("IsRunning", true);
             _weaponController.StopAim();
         }
         if (Input.GetKeyUp(KeyCode.LeftShift))
         {
-            _currentSpeed = _walkSpeed;
+            _maxSpeed = _walkSpeed;
             _animator.SetBool("IsRunning", false);
-        }
-
-        if (Input.GetKey(KeyCode.W))
-        {
-            Quaternion playerRotation = transform.rotation;
-            Vector3 movementDirection = playerRotation * Vector3.forward;
-            newVelocity += movementDirection * _currentSpeed * Time.deltaTime;
-        }
-        if (Input.GetKey(KeyCode.S))
-        {
-            Quaternion playerRotation = transform.rotation;
-            Vector3 movementDirection = playerRotation * Vector3.forward;
-            newVelocity += -movementDirection * _walkSpeed * Time.deltaTime;
-        }
-        if (Input.GetKey(KeyCode.A))
-        {
-            Quaternion playerRotation = transform.rotation;
-            Vector3 movementDirection = playerRotation * Vector3.right;
-            newVelocity += -movementDirection * _currentSpeed * Time.deltaTime;
-        }
-        if (Input.GetKey(KeyCode.D))
-        {
-            Quaternion playerRotation = transform.rotation;
-            Vector3 movementDirection = playerRotation * Vector3.right;
-            newVelocity += movementDirection * _currentSpeed * Time.deltaTime;
         }
 
         if (Input.GetKeyDown(KeyCode.Space))
@@ -166,8 +141,87 @@ public class PlayerController : MonoBehaviour
             Jump(_currentJumpType);
         }
 
-        _rb.velocity = newVelocity;
+        if (_isGrounded)
+        {
+            _rb.AddForce(direction.normalized * _playerAcceleration, ForceMode.Force);
+        }
+        else
+        {
+            _rb.AddForce(direction.normalized * _playerAcceleration * _airMultiplier, ForceMode.Force);
+        }
+
+        if (horizontalInput == 0 && verticalInput == 0 && _isGrounded)
+        {
+            _rb.velocity = new Vector3(0, _rb.velocity.y, 0);
+        }
     }
+
+    private void SpeedControl()
+    {
+        Vector3 flatVel = new Vector3(_rb.velocity.x, 0f, _rb.velocity.z);
+
+        if (flatVel.magnitude > _maxSpeed)
+        {
+            Vector3 limitedVel = flatVel.normalized * _maxSpeed;
+            _rb.velocity = new Vector3(limitedVel.x, _rb.velocity.y, limitedVel.z);
+        }
+
+    }
+
+    // private void Movement()
+    // {
+    //     _animator.SetFloat("Speed", _rb.velocity.magnitude);
+    //     _animator.SetFloat("Direction", _rb.velocity.z);
+    //     Vector3 oldVelocity = _rb.velocity;
+    //     Vector3 newVelocity = new Vector3();
+    //     newVelocity.y = oldVelocity.y;
+
+
+    //     //TODO ATUALIZAR PARA O NOVO INPUT
+    // if (Input.GetKeyDown(KeyCode.LeftShift))
+    // {
+    //     _currentSpeed = _runSpeed;
+    //     _animator.SetBool("IsRunning", true);
+    //     _weaponController.StopAim();
+    // }
+    // if (Input.GetKeyUp(KeyCode.LeftShift))
+    // {
+    //     _currentSpeed = _walkSpeed;
+    //     _animator.SetBool("IsRunning", false);
+    // }
+
+    //     if (Input.GetKey(KeyCode.W))
+    //     {
+    //         Quaternion playerRotation = transform.rotation;
+    //         Vector3 movementDirection = playerRotation * Vector3.forward;
+    //         newVelocity += movementDirection * _currentSpeed * Time.deltaTime;
+    //     }
+    //     if (Input.GetKey(KeyCode.S))
+    //     {
+    //         Quaternion playerRotation = transform.rotation;
+    //         Vector3 movementDirection = playerRotation * Vector3.forward;
+    //         newVelocity += -movementDirection * _walkSpeed * Time.deltaTime;
+    //     }
+    //     if (Input.GetKey(KeyCode.A))
+    //     {
+    //         Quaternion playerRotation = transform.rotation;
+    //         Vector3 movementDirection = playerRotation * Vector3.right;
+    //         newVelocity += -movementDirection * _currentSpeed * Time.deltaTime;
+    //     }
+    //     if (Input.GetKey(KeyCode.D))
+    //     {
+    //         Quaternion playerRotation = transform.rotation;
+    //         Vector3 movementDirection = playerRotation * Vector3.right;
+    //         newVelocity += movementDirection * _currentSpeed * Time.deltaTime;
+    //     }
+
+    //     if (Input.GetKeyDown(KeyCode.Space))
+    //     {
+    //         Jump(_currentJumpType);
+    //     }
+
+    //     _rb.velocity = newVelocity;
+    // }
 
     private void Jump(JumpTypes jumpType)
     {
