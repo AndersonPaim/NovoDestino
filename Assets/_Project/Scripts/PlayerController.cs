@@ -16,12 +16,14 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField] private WeaponController _weaponController;
     [SerializeField] private GameObject _pivot;
+    [SerializeField] private Transform _throwKnifePos;
+    [SerializeField] private Knife _knife;
     [SerializeField] private float _walkSpeed;
     [SerializeField] private float _runSpeed;
     [SerializeField] private float _jumpForce;
     [SerializeField] private float _lightGlideDrag;
     [SerializeField] private float _heavyGlideDrag;
-    [SerializeField] private float _shootForce;
+    [SerializeField] private float _throwKnifeForce;
     [SerializeField] private float _sensitivity;
     [SerializeField] private JumpTypes _currentJumpType;
     [SerializeField] private Rigidbody _rb;
@@ -39,6 +41,14 @@ public class PlayerController : MonoBehaviour
     public float Speed => _currentSpeed;
     //private Sequence _jumpSequence;
 
+    public void ThrowKnife()
+    {
+        Knife knife = Instantiate(_knife);
+        knife.transform.position = _throwKnifePos.transform.position;
+        knife.transform.rotation = _throwKnifePos.transform.rotation;
+        knife.Throw(_throwKnifeForce);
+    }
+
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -49,6 +59,7 @@ public class PlayerController : MonoBehaviour
         _input.Player.Look.performed += _ => Rotate();
         _input.Player.Dance1.performed += _ => Dance(Dances.DANCE1);
         _input.Player.Dance2.performed += _ => Dance(Dances.DANCE2);
+        _input.Player.Knife.performed += _ => Knife();
 
         /*QUANDO FOR FAZER UM PULO DECENTE
 
@@ -75,6 +86,11 @@ public class PlayerController : MonoBehaviour
         {
             _rb.drag = 0;
         }
+    }
+
+    private void Knife()
+    {
+        _animator.SetTrigger("Knife");
     }
 
     private void Rotate()

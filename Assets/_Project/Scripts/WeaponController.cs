@@ -11,7 +11,6 @@ public class WeaponController : MonoBehaviour
     [SerializeField] private float _shootForce;
     [SerializeField] private ParticleSystem _shootParticle;
     [SerializeField] private Bullet _bulletPrefab;
-    [SerializeField] private AudioSource _bulletAudio;
     [SerializeField] private Transform _bulletPosition;
     [SerializeField] private GameObject _hipFireCrosshair;
     [SerializeField] private float _fireRate;
@@ -19,6 +18,8 @@ public class WeaponController : MonoBehaviour
     [SerializeField] private float _damage;
     [SerializeField] private DamageType _damageType;
     [SerializeField] private TextMeshProUGUI _bulletsText;
+    [SerializeField] private AudioClip _audioClip;
+    [SerializeField] private AudioObj _audioObj;
 
     private Animator _animator;
     private NewControls _input;
@@ -57,7 +58,11 @@ public class WeaponController : MonoBehaviour
         else
         {
             Bullet bullet = Instantiate(_bulletPrefab);
-            //_bulletAudio.Play();
+
+            AudioObj audio = Instantiate(_audioObj);
+            audio.transform.position = transform.position;
+            audio.Initialize(_audioClip);
+
             bullet.transform.localPosition = _bulletPosition.transform.position;
             bullet.transform.localRotation = _bulletPosition.transform.rotation;
             bullet.Shoot(_shootForce, _damage, _damageType);
