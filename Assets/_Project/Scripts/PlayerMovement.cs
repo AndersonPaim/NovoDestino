@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using Cinemachine;
+using DG.Tweening;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -15,6 +17,12 @@ public class PlayerMovement : MonoBehaviour
     }
 
     [SerializeField] private WeaponController _weaponController;
+
+    [Header("Camera")]
+    [SerializeField] private CinemachineVirtualCamera _camera;
+    [SerializeField] private float _noiseAmplitude;
+    [SerializeField] private float _noiseFrequency;
+    [SerializeField] private GameObject _hipFireCrosshair;
 
     [Header("Movement")]
     [SerializeField] private JumpTypes _currentJumpType;
@@ -41,6 +49,7 @@ public class PlayerMovement : MonoBehaviour
     private bool _isGrounded;
     private bool _hasExtrajump;
     private bool _isSwinging;
+    private bool _wasGrapped;
     private Vector3 _swingPoint;
     private Vector3 _currentGrapplePosition;
     private SpringJoint _joint;
@@ -51,10 +60,12 @@ public class PlayerMovement : MonoBehaviour
 
     public Transform orientation;
     Vector3 moveDirection;
+    private CinemachineBasicMultiChannelPerlin _cameraToShake;
 
     private void Start()
     {
         _rb = GetComponent<Rigidbody>();
+        _cameraToShake = _camera.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
         _rb.freezeRotation = true;
         _maxSpeed = _walkSpeed;
         Cursor.lockState = CursorLockMode.Locked;
@@ -68,6 +79,11 @@ public class PlayerMovement : MonoBehaviour
     private void Update()
     {
         _isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
+
+        if (_isGrounded)
+        {
+            _wasGrapped = false;
+        }
 
         Movement();
         SpeedControl();
@@ -90,7 +106,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Movement()
     {
-        if (_isGrounded)
+        if (_isGrounded && !_isSwinging)
         {
             _rb.drag = _groundedDrag;
         }
@@ -108,7 +124,7 @@ public class PlayerMovement : MonoBehaviour
             StopGrapple();
         }
 
-        if(_isSwinging)
+        if (_isSwinging)
         {
             Vector3 grappleDirection = _swingPoint - transform.position;
             _rb.AddForce(grappleDirection.normalized * _grappleForce * Time.deltaTime);
@@ -116,6 +132,13 @@ public class PlayerMovement : MonoBehaviour
 
             _joint.maxDistance = distanceFromPoint * 0.8f;
             _joint.minDistance = distanceFromPoint * 0.25f;
+
+            if (distanceFromPoint <= 2)
+            {
+                StopGrapple();
+                _wasGrapped = true;
+            }
+
             return;
         }
 
@@ -129,11 +152,28 @@ public class PlayerMovement : MonoBehaviour
             _maxSpeed = _runSpeed;
             _animator.SetBool("IsRunning", true);
             _weaponController.StopAim();
+
+            DOTween.To(() => _cameraToShake.m_AmplitudeGain, x => _cameraToShake.m_AmplitudeGain = x, _noiseAmplitude, 2.0f)
+                .SetEase(Ease.Linear); // Define a curva de interpolação (neste caso, linear)
+
+            DOTween.To(() => _cameraToShake.m_FrequencyGain, x => _cameraToShake.m_FrequencyGain = x, _noiseFrequency, 2.0f)
+                .SetEase(Ease.Linear); // Define a curva de interpolação (neste caso, linear)
+
+            _hipFireCrosshair.SetActive(false);
         }
         if (Input.GetKeyUp(KeyCode.LeftShift))
         {
             _maxSpeed = _walkSpeed;
             _animator.SetBool("IsRunning", false);
+
+            DOTween.To(() => _cameraToShake.m_AmplitudeGain, x => _cameraToShake.m_AmplitudeGain = x, 0, 2.0f)
+                .SetEase(Ease.Linear); // Define a curva de interpolação (neste caso, linear)
+
+            DOTween.To(() => _cameraToShake.m_FrequencyGain, x => _cameraToShake.m_FrequencyGain = x, 0, 2.0f)
+                .SetEase(Ease.Linear); // Define a curva de interpolação (neste caso, linear)
+
+
+            _hipFireCrosshair.SetActive(true);
         }
     }
 
@@ -143,11 +183,11 @@ public class PlayerMovement : MonoBehaviour
         float verticalInput = Input.GetAxisRaw("Vertical");
         moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
 
-        if(_isGrounded)
+        if (_isGrounded)
         {
             _rb.AddForce(moveDirection.normalized * _playerAcceleration * 10f, ForceMode.Force);
         }
-        else if(!_isGrounded)
+        else if (!_isGrounded)
         {
             _rb.AddForce(moveDirection.normalized * _playerAcceleration * 10f * _airMultiplier, ForceMode.Force);
         }
@@ -160,56 +200,78 @@ public class PlayerMovement : MonoBehaviour
         if (flatVel.magnitude > _maxSpeed)
         {
             Vector3 limitedVel = flatVel.normalized * _maxSpeed;
-            _rb.velocity = new Vector3(limitedVel.x, _rb.velocity.y, limitedVel.z);
+
+            if (_isSwinging || _wasGrapped)
+            {
+                _rb.velocity = new Vector3(limitedVel.x, limitedVel.y, limitedVel.z);
+            }
+            else
+            {
+                _rb.velocity = new Vector3(limitedVel.x, _rb.velocity.y, limitedVel.z);
+            }
         }
     }
 
     private void DrawRope()
     {
-        if(!_joint)
+        if (!_joint)
         {
             return;
         }
 
-        _currentGrapplePosition = Vector3.Lerp(_currentGrapplePosition, _swingPoint, Time.deltaTime * 8);
-
-        _lineRenderer.SetPosition(0, _grapplePosition.position);
+        _lineRenderer.SetPosition(0, transform.position);
         _lineRenderer.SetPosition(1, _swingPoint);
+
     }
 
     private void StartGrapple()
     {
-        _isSwinging = true;
-        _maxSpeed = _grappleSpeed;
         RaycastHit hit;
-        Transform cam = Camera.main.gameObject.transform;
+        Transform initialPosition = Camera.main.transform;
+        _animator.SetBool("IsRunning", false);
 
-        if(Physics.Raycast(cam.position, cam.forward, out hit, _maxGrappleDistance, _grappableAreas))
+        if (_isSwinging)
+        {
+            return;
+        }
+
+        if (Physics.Raycast(initialPosition.position, initialPosition.forward, out hit, _maxGrappleDistance, _grappableAreas))
         {
             _swingPoint = hit.point;
-            _joint = gameObject.AddComponent<SpringJoint>();
-            _joint.autoConfigureConnectedAnchor = false;
-            _joint.connectedAnchor = _swingPoint;
-
-            float distanceFromPoint = Vector3.Distance(transform.position, _swingPoint);
-
-            _joint.maxDistance = distanceFromPoint * 0.8f;
-            _joint.minDistance = distanceFromPoint * 0.25f;
-
-            _joint.spring = 4.5f;
-            _joint.damper = 7;
-            _joint.massScale = 4.5f;
-
-            _lineRenderer.positionCount = 2;
         }
+        else
+        {
+            _swingPoint = initialPosition.position + initialPosition.forward * _maxGrappleDistance;
+        }
+
+        _maxSpeed = _grappleSpeed;
+        _isSwinging = true;
+
+        _joint = gameObject.AddComponent<SpringJoint>();
+        _joint.autoConfigureConnectedAnchor = false;
+        _joint.connectedAnchor = _swingPoint;
+
+        float distanceFromPoint = Vector3.Distance(transform.position, _swingPoint);
+
+        _joint.maxDistance = distanceFromPoint * 0.8f;
+        _joint.minDistance = distanceFromPoint * 0.25f;
+
+        _joint.spring = 4.5f;
+        _joint.damper = 7;
+        _joint.massScale = 4.5f;
+
+        _lineRenderer.positionCount = 2;
     }
 
     private void StopGrapple()
     {
-        _isSwinging = false;
-        _maxSpeed = _walkSpeed;
-        _lineRenderer.positionCount = 0;
-        Destroy(_joint);
+        if (_isSwinging)
+        {
+            _lineRenderer.positionCount = 0;
+            Destroy(_joint);
+            _isSwinging = false;
+            _maxSpeed = _walkSpeed;
+        }
     }
 
     private void Jump(JumpTypes jumpType)

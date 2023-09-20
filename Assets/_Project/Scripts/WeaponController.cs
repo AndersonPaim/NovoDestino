@@ -49,7 +49,7 @@ public class WeaponController : MonoBehaviour
 
     public void ShootBullet()
     {
-        if(_bullets <= 0)
+        if (_bullets <= 0)
         {
             _animator.SetBool("Shoot", false);
             Reload();
@@ -89,7 +89,7 @@ public class WeaponController : MonoBehaviour
 
     private void Reload()
     {
-        if(_bullets < _magazine && !_isReloading)
+        if (_bullets < _magazine && !_isReloading)
         {
             _animator.SetTrigger("Reload");
         }
@@ -99,7 +99,7 @@ public class WeaponController : MonoBehaviour
     {
         bool isRunning = _animator.GetCurrentAnimatorStateInfo(0).IsName("RunningWeaponLoop");
 
-        if(_isReloading || isRunning)
+        if (_isReloading || isRunning)
         {
             return;
         }
@@ -118,9 +118,9 @@ public class WeaponController : MonoBehaviour
         _hipFireCrosshair.SetActive(true);
     }
 
-    private async void Shoot()
+    private void Shoot()
     {
-        if(_canShoot && _bullets > 0)
+        if (_canShoot && _bullets > 0)
         {
             float fireRate = (_fireRate / 60000) * 166;
             _animator.SetFloat("FireRate", fireRate);
