@@ -5,7 +5,6 @@ using TMPro;
 
 public class WeaponController : MonoBehaviour
 {
-    [SerializeField] private PlayerController _playerController;
     [SerializeField] private CinemachineVirtualCamera _eyeCamera;
     [SerializeField] private CinemachineVirtualCamera _scopeCamera;
     [SerializeField] private float _shootForce;
