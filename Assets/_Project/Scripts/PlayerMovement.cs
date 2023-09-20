@@ -40,7 +40,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Animator _animator;
 
     [Header("Grapple")]
-    [SerializeField] private LineRenderer _lineRenderer;
     [SerializeField] private Transform _grapplePosition;
     [SerializeField] private float _maxGrappleDistance;
     [SerializeField] private float _grappleForce;
@@ -50,6 +49,7 @@ public class PlayerMovement : MonoBehaviour
     private bool _hasExtrajump;
     private bool _isSwinging;
     private bool _wasGrapped;
+    private bool _canDrawRope = false;
     private Vector3 _swingPoint;
     private Vector3 _currentGrapplePosition;
     private SpringJoint _joint;
@@ -59,6 +59,10 @@ public class PlayerMovement : MonoBehaviour
     private NewControls _input;
 
     public Transform orientation;
+    public bool IsSwinging => _isSwinging;
+    public bool CanDrawRope => _canDrawRope;
+    public Transform GrapplePos => _grapplePosition;
+    public Vector3 GrapplePoint => _swingPoint;
     Vector3 moveDirection;
     private CinemachineBasicMultiChannelPerlin _cameraToShake;
 
@@ -87,11 +91,6 @@ public class PlayerMovement : MonoBehaviour
 
         Movement();
         SpeedControl();
-    }
-
-    private void LateUpdate()
-    {
-        DrawRope();
     }
 
     private void FixedUpdate()
@@ -124,7 +123,7 @@ public class PlayerMovement : MonoBehaviour
             StopGrapple();
         }
 
-        if (_isSwinging)
+        if (_isSwinging && _canDrawRope)
         {
             Vector3 grappleDirection = _swingPoint - transform.position;
             _rb.AddForce(grappleDirection.normalized * _grappleForce * Time.deltaTime);
@@ -212,16 +211,10 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private void DrawRope()
+    private IEnumerator StartDrawRopeDelay()
     {
-        if (!_joint)
-        {
-            return;
-        }
-
-        _lineRenderer.SetPosition(0, transform.position);
-        _lineRenderer.SetPosition(1, _swingPoint);
-
+        yield return new WaitForSeconds(0.25f);
+        _canDrawRope = true;
     }
 
     private void StartGrapple()
@@ -244,6 +237,8 @@ public class PlayerMovement : MonoBehaviour
             _swingPoint = initialPosition.position + initialPosition.forward * _maxGrappleDistance;
         }
 
+        StartCoroutine(StartDrawRopeDelay());
+        _animator.SetBool("IsGrappling", true);
         _maxSpeed = _grappleSpeed;
         _isSwinging = true;
 
@@ -255,21 +250,21 @@ public class PlayerMovement : MonoBehaviour
 
         _joint.maxDistance = distanceFromPoint * 0.8f;
         _joint.minDistance = distanceFromPoint * 0.25f;
-
         _joint.spring = 4.5f;
         _joint.damper = 7;
         _joint.massScale = 4.5f;
 
-        _lineRenderer.positionCount = 2;
+        _currentGrapplePosition = _grapplePosition.position;
     }
 
     private void StopGrapple()
     {
         if (_isSwinging)
         {
-            _lineRenderer.positionCount = 0;
+            _animator.SetBool("IsGrappling", false);
             Destroy(_joint);
             _isSwinging = false;
+            _canDrawRope = false;
             _maxSpeed = _walkSpeed;
         }
     }
