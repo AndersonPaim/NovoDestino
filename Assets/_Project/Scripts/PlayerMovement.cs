@@ -17,6 +17,7 @@ public class PlayerMovement : MonoBehaviour
     }
 
     [SerializeField] private WeaponController _weaponController;
+    [SerializeField] private LayerMask _groundLayer;
 
     [Header("Camera")]
     [SerializeField] private CinemachineVirtualCamera _camera;
@@ -44,11 +45,15 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float _maxGrappleDistance;
     [SerializeField] private float _grappleForce;
     [SerializeField] private LayerMask _grappableAreas;
+    [SerializeField] private float _defaultFov;
+    [SerializeField] private float _grappleFov;
+    [SerializeField] private float _damper;
+    [SerializeField] private float _springForce;
+    [SerializeField] private float _stopGrappleDistance;
 
     private bool _isGrounded;
     private bool _hasExtrajump;
     private bool _isSwinging;
-    private bool _wasGrapped;
     private bool _canDrawRope = false;
     private Vector3 _swingPoint;
     private Vector3 _currentGrapplePosition;
@@ -82,12 +87,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
-        _isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
-
-        if (_isGrounded)
-        {
-            _wasGrapped = false;
-        }
+        _isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f, _groundLayer);
 
         Movement();
         SpeedControl();
@@ -132,10 +132,9 @@ public class PlayerMovement : MonoBehaviour
             _joint.maxDistance = distanceFromPoint * 0.8f;
             _joint.minDistance = distanceFromPoint * 0.25f;
 
-            if (distanceFromPoint <= 2)
+            if (distanceFromPoint <= _stopGrappleDistance)
             {
                 StopGrapple();
-                _wasGrapped = true;
             }
 
             return;
@@ -153,10 +152,10 @@ public class PlayerMovement : MonoBehaviour
             _weaponController.StopAim();
 
             DOTween.To(() => _cameraToShake.m_AmplitudeGain, x => _cameraToShake.m_AmplitudeGain = x, _noiseAmplitude, 2.0f)
-                .SetEase(Ease.Linear); // Define a curva de interpolação (neste caso, linear)
+                .SetEase(Ease.Linear);
 
             DOTween.To(() => _cameraToShake.m_FrequencyGain, x => _cameraToShake.m_FrequencyGain = x, _noiseFrequency, 2.0f)
-                .SetEase(Ease.Linear); // Define a curva de interpolação (neste caso, linear)
+                .SetEase(Ease.Linear);
 
             _hipFireCrosshair.SetActive(false);
         }
@@ -166,10 +165,10 @@ public class PlayerMovement : MonoBehaviour
             _animator.SetBool("IsRunning", false);
 
             DOTween.To(() => _cameraToShake.m_AmplitudeGain, x => _cameraToShake.m_AmplitudeGain = x, 0, 2.0f)
-                .SetEase(Ease.Linear); // Define a curva de interpolação (neste caso, linear)
+                .SetEase(Ease.Linear);
 
             DOTween.To(() => _cameraToShake.m_FrequencyGain, x => _cameraToShake.m_FrequencyGain = x, 0, 2.0f)
-                .SetEase(Ease.Linear); // Define a curva de interpolação (neste caso, linear)
+                .SetEase(Ease.Linear);
 
 
             _hipFireCrosshair.SetActive(true);
@@ -195,19 +194,18 @@ public class PlayerMovement : MonoBehaviour
     private void SpeedControl()
     {
         Vector3 flatVel = new Vector3(_rb.velocity.x, 0f, _rb.velocity.z);
+        float vertVel = _grappleSpeed;
+
+        if (_rb.velocity.y < vertVel)
+        {
+            vertVel = _rb.velocity.y;
+        }
 
         if (flatVel.magnitude > _maxSpeed)
         {
             Vector3 limitedVel = flatVel.normalized * _maxSpeed;
 
-            if (_isSwinging || _wasGrapped)
-            {
-                _rb.velocity = new Vector3(limitedVel.x, limitedVel.y, limitedVel.z);
-            }
-            else
-            {
-                _rb.velocity = new Vector3(limitedVel.x, _rb.velocity.y, limitedVel.z);
-            }
+            _rb.velocity = new Vector3(limitedVel.x, vertVel, limitedVel.z);
         }
     }
 
@@ -237,6 +235,9 @@ public class PlayerMovement : MonoBehaviour
             _swingPoint = initialPosition.position + initialPosition.forward * _maxGrappleDistance;
         }
 
+        DOTween.To(() => _camera.m_Lens.FieldOfView, x => _camera.m_Lens.FieldOfView = x, _grappleFov, 0.5f)
+                .SetEase(Ease.Linear);
+
         StartCoroutine(StartDrawRopeDelay());
         _animator.SetBool("IsGrappling", true);
         _maxSpeed = _grappleSpeed;
@@ -250,8 +251,8 @@ public class PlayerMovement : MonoBehaviour
 
         _joint.maxDistance = distanceFromPoint * 0.8f;
         _joint.minDistance = distanceFromPoint * 0.25f;
-        _joint.spring = 4.5f;
-        _joint.damper = 7;
+        _joint.spring = _springForce;
+        _joint.damper = _damper;
         _joint.massScale = 4.5f;
 
         _currentGrapplePosition = _grapplePosition.position;
@@ -261,6 +262,9 @@ public class PlayerMovement : MonoBehaviour
     {
         if (_isSwinging)
         {
+            DOTween.To(() => _camera.m_Lens.FieldOfView, x => _camera.m_Lens.FieldOfView = x, _defaultFov, 0.5f)
+                .SetEase(Ease.Linear);
+
             _animator.SetBool("IsGrappling", false);
             Destroy(_joint);
             _isSwinging = false;
