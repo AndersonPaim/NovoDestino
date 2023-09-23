@@ -17,6 +17,11 @@ public class PlayerCam : MonoBehaviour
     public void SetRecoilOffset(UnityEngine.Vector2 recoilOffset)
     {
         _recoilOffset += recoilOffset;
+
+        if(_recoilOffset.x < -360)
+        {
+            _recoilOffset.x += 360;
+        }
     }
 
     private void Start()
@@ -35,8 +40,7 @@ public class PlayerCam : MonoBehaviour
 
         xRotation -= mouseY;
 
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
-        Debug.Log(_recoilOffset.x);
+        xRotation = Mathf.Clamp(xRotation, -90f - _recoilOffset.x, 90f - _recoilOffset.x);
 
         // rotate cam and orientation
         transform.rotation = Quaternion.Euler(xRotation + _recoilOffset.x, yRotation + _recoilOffset.y, transform.rotation.z);
