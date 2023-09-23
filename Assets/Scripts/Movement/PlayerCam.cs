@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,6 +12,12 @@ public class PlayerCam : MonoBehaviour
 
     float xRotation;
     float yRotation;
+    private UnityEngine.Vector2 _recoilOffset;
+
+    public void SetRecoilOffset(UnityEngine.Vector2 recoilOffset)
+    {
+        _recoilOffset += recoilOffset;
+    }
 
     private void Start()
     {
@@ -27,10 +34,12 @@ public class PlayerCam : MonoBehaviour
         yRotation += mouseX;
 
         xRotation -= mouseY;
+
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+        Debug.Log(_recoilOffset.x);
 
         // rotate cam and orientation
-        transform.rotation = Quaternion.Euler(xRotation, yRotation, 0);
-        orientation.rotation = Quaternion.Euler(0, yRotation, 0);
+        transform.rotation = Quaternion.Euler(xRotation + _recoilOffset.x, yRotation + _recoilOffset.y, transform.rotation.z);
+        orientation.rotation = Quaternion.Euler(transform.rotation.x, yRotation, transform.rotation.z);
     }
 }

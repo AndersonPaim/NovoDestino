@@ -2,17 +2,22 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Cinemachine;
 using TMPro;
+using DG.Tweening;
+using UnityEditor.Experimental.GraphView;
 
 public class WeaponController : MonoBehaviour
 {
     [SerializeField] private CinemachineVirtualCamera _eyeCamera;
     [SerializeField] private CinemachineVirtualCamera _scopeCamera;
+    [SerializeField] private PlayerCam _playerCam;
     [SerializeField] private float _shootForce;
     [SerializeField] private ParticleSystem _shootParticle;
     [SerializeField] private Bullet _bulletPrefab;
     [SerializeField] private Transform _bulletPosition;
+    [SerializeField] private Transform _recoilPivot;
     [SerializeField] private GameObject _hipFireCrosshair;
     [SerializeField] private float _fireRate;
+    [SerializeField] private Vector2 _recoilDistance;
     [SerializeField] private float _magazine;
     [SerializeField] private float _damage;
     [SerializeField] private DamageType _damageType;
@@ -25,6 +30,7 @@ public class WeaponController : MonoBehaviour
     private bool _canShoot = true;
     private bool _isAiming = false;
     private bool _isReloading = false;
+    private bool _isShooting = false;
     private float _bullets;
 
     public bool IsAiming => _isAiming;
@@ -92,6 +98,7 @@ public class WeaponController : MonoBehaviour
         if (_bullets < _magazine && !_isReloading)
         {
             _animator.SetTrigger("Reload");
+            _isShooting = false;
         }
     }
 
@@ -125,6 +132,8 @@ public class WeaponController : MonoBehaviour
             float fireRate = (_fireRate / 60000) * 166;
             _animator.SetFloat("FireRate", fireRate);
             _animator.SetBool("Shoot", true);
+            _isShooting = true;
+            Recoil();
         }
         else
         {
@@ -138,5 +147,19 @@ public class WeaponController : MonoBehaviour
         _canShoot = false;
         await Task.Delay(100);
         _canShoot = true;
+        _isShooting = false;
+    }
+
+    private async void Recoil()
+    {
+        while (_isShooting)
+        {
+            float rightOrLeft = Random.Range(-_recoilDistance.y, _recoilDistance.y);
+            float doGoUp = Random.Range(0, _recoilDistance.x);
+            Vector3 direction = new Vector3(doGoUp, rightOrLeft, 0);
+
+            _playerCam.SetRecoilOffset(direction);
+            await Task.Delay(50);
+        }
     }
 }
