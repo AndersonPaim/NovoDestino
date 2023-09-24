@@ -30,7 +30,6 @@ public class Bullet : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("COLLIDE");
         _hitParticle.Play();
         // _collider.enabled = false;
 

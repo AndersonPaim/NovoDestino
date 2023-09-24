@@ -99,7 +99,6 @@ public class WeaponController : MonoBehaviour
         {
             _animator.SetTrigger("Reload");
             _isShooting = false;
-            _playerCam.ResetRecoilOffset();
         }
     }
 
@@ -149,7 +148,6 @@ public class WeaponController : MonoBehaviour
         await Task.Delay(100);
         _canShoot = true;
         _isShooting = false;
-        _playerCam.ResetRecoilOffset();
     }
 
     private async void Recoil()

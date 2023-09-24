@@ -327,7 +327,7 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 40
   m_BilateralUpsample:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 1
   m_DirectionCount:
     m_OverrideState: 1

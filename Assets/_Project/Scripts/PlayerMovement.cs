@@ -5,6 +5,7 @@ using TMPro;
 using Cinemachine;
 using DG.Tweening;
 using System;
+using System.Threading.Tasks;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -18,6 +19,7 @@ public class PlayerMovement : MonoBehaviour
     }
 
     [SerializeField] private WeaponController _weaponController;
+    [SerializeField] private AbilitiesController _abilitiesController;
     [SerializeField] private LayerMask _groundLayer;
 
     [Header("Camera")]
@@ -36,6 +38,7 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Jump")]
     [SerializeField] private float _jumpForce;
+    [SerializeField] private float _jumpForceMultiplier;
     [SerializeField] private float _lightGlideDrag;
     [SerializeField] private float _heavyGlideDrag;
     [SerializeField] private float _airMultiplier;
@@ -55,6 +58,7 @@ public class PlayerMovement : MonoBehaviour
     private bool _isGrounded;
     private bool _hasExtrajump;
     private bool _isSwinging;
+    private bool _hasGrapple;
     private bool _canDrawRope = false;
     private Vector3 _swingPoint;
     private Vector3 _currentGrapplePosition;
@@ -67,6 +71,7 @@ public class PlayerMovement : MonoBehaviour
     public Transform orientation;
     public bool IsSwinging => _isSwinging;
     public bool CanDrawRope => _canDrawRope;
+
     public Transform GrapplePos => _grapplePosition;
     public Vector3 GrapplePoint => _swingPoint;
     Vector3 moveDirection;
@@ -92,6 +97,11 @@ public class PlayerMovement : MonoBehaviour
 
         Movement();
         SpeedControl();
+
+        if (_isGrounded && !_isSwinging)
+        {
+            _hasGrapple = true;
+        }
     }
 
     private void FixedUpdate()
@@ -115,13 +125,18 @@ public class PlayerMovement : MonoBehaviour
             _rb.drag = 0;
         }
 
-        if (Input.GetKeyDown(KeyCode.Q))
+        if (Input.GetKeyDown(KeyCode.G))
         {
             StartGrapple();
         }
-        if (Input.GetKeyUp(KeyCode.Q))
+        if (Input.GetKeyUp(KeyCode.G))
         {
             StopGrapple();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            _abilitiesController.Grenade();
         }
 
         if (_isSwinging && _canDrawRope)
@@ -222,7 +237,7 @@ public class PlayerMovement : MonoBehaviour
         Transform initialPosition = Camera.main.transform;
         _animator.SetBool("IsRunning", false);
 
-        if (_isSwinging)
+        if (_isSwinging || !_hasGrapple)
         {
             return;
         }
@@ -243,6 +258,7 @@ public class PlayerMovement : MonoBehaviour
         _animator.SetBool("IsGrappling", true);
         _maxSpeed = _grappleSpeed;
         _isSwinging = true;
+        _hasGrapple = false;
 
         _joint = gameObject.AddComponent<SpringJoint>();
         _joint.autoConfigureConnectedAnchor = false;
@@ -284,14 +300,15 @@ public class PlayerMovement : MonoBehaviour
         }
         else if (_hasExtrajump)
         {
+            _rb.velocity = new Vector3(_rb.velocity.x, 0, _rb.velocity.z);
             switch (jumpType)
             {
                 case JumpTypes.Double:
-                    _rb.AddForce(transform.up * _jumpForce * 1.5f, ForceMode.Impulse);
+                    _rb.AddForce(transform.up * _jumpForce * _jumpForceMultiplier * 1.2f, ForceMode.Impulse);
                     _hasExtrajump = false;
                     break;
                 case JumpTypes.Triple:
-                    _rb.AddForce(transform.up * _jumpForce, ForceMode.Impulse);
+                    _rb.AddForce(transform.up * _jumpForce * _jumpForceMultiplier, ForceMode.Impulse);
                     _jumpCount++;
                     if (_jumpCount == 2)
                     {
@@ -318,4 +335,5 @@ public class PlayerMovement : MonoBehaviour
             _hasExtrajump = false;
         }
     }
+
 }

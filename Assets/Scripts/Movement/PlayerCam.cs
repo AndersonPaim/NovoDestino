@@ -15,21 +15,11 @@ public class PlayerCam : MonoBehaviour
     float yRotation;
     private Vector2 _recoilOffset;
 
-    private int _newOffsetX;
-    private int _newOffsetY;
-    private bool _resettingRecoil = false;
-
     public void SetRecoilOffset(Vector2 recoilOffset)
     {
         _recoilOffset += recoilOffset;
-        // _resettingRecoil = false;
     }
 
-    public void ResetRecoilOffset()
-    {
-        // _resettingRecoil = true;
-        _recoilOffset = new Vector2(0, 0);
-    }
 
     private void Start()
     {
@@ -47,46 +37,11 @@ public class PlayerCam : MonoBehaviour
 
         xRotation -= mouseY;
 
-        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+        xRotation = Mathf.Clamp(xRotation, -90f - _recoilOffset.x, 90f - _recoilOffset.x);
 
-        // ====================== NAO FUNCIONA MAS TALVEZ SEJA ERRO EM COMO EU FIZ
-        // if (_resettingRecoil)
-        // {
-        //     if (_recoilOffset.x < 0)
-        //     {
-        //         _newOffsetX = 1;
-        //         Debug.Log(_recoilOffset.x);
-        //     }
-        //     else
-        //     {
-        //         _newOffsetX = 0;
-        //     }
-
-        //     if (_recoilOffset.y > 0)
-        //     {
-        //         _newOffsetY = -1;
-        //     }
-        //     else if (_recoilOffset.y < 0)
-        //     {
-        //         _newOffsetY = 1;
-        //     }
-        //     else
-        //     {
-        //         _newOffsetY = 0;
-        //     }
-
-        //     if (_recoilOffset.y == 0 && _recoilOffset.x == 0)
-        //     {
-        //         _resettingRecoil = false;
-        //         _newOffsetX = 0;
-        //         _newOffsetY = 0;
-        //     }
-
-        //     _recoilOffset = new Vector2(_newOffsetX, _newOffsetY);
-        // }
 
         // rotate cam and orientation
         transform.rotation = Quaternion.Euler(xRotation + _recoilOffset.x, yRotation + _recoilOffset.y, transform.rotation.z);
-        orientation.rotation = Quaternion.Euler(transform.rotation.x, yRotation, transform.rotation.z);
+        orientation.rotation = Quaternion.Euler(transform.rotation.x, yRotation + _recoilOffset.y, transform.rotation.z);
     }
 }
