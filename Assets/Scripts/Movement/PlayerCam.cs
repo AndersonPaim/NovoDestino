@@ -2,10 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using Mirror.Examples.Pong;
 using UnityEngine;
 
 public class PlayerCam : MonoBehaviour
 {
+    [SerializeField] private PlayerConnection _connection;
     public float sensX;
     public float sensY;
 
@@ -29,6 +31,11 @@ public class PlayerCam : MonoBehaviour
 
     private void Update()
     {
+        if (!_connection.isOwned)
+        {
+            return;
+        }
+
         // get mouse input
         float mouseX = Input.GetAxisRaw("Mouse X") * Time.deltaTime * sensX;
         float mouseY = Input.GetAxisRaw("Mouse Y") * Time.deltaTime * sensY;

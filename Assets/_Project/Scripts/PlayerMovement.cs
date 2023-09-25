@@ -5,9 +5,10 @@ using TMPro;
 using Cinemachine;
 using DG.Tweening;
 using System;
-using System.Threading.Tasks;
+using Mirror;
+using Mirror.Examples.Pong;
 
-public class PlayerMovement : MonoBehaviour
+public class PlayerMovement : NetworkBehaviour
 {
     public enum Dances
     {
@@ -18,15 +19,15 @@ public class PlayerMovement : MonoBehaviour
         Double, Triple, lightGlide, heavyGlide
     }
 
+    [SerializeField] private PlayerConnection _connection;
     [SerializeField] private WeaponController _weaponController;
-    [SerializeField] private AbilitiesController _abilitiesController;
     [SerializeField] private LayerMask _groundLayer;
 
     [Header("Camera")]
     [SerializeField] private CinemachineVirtualCamera _camera;
     [SerializeField] private float _noiseAmplitude;
     [SerializeField] private float _noiseFrequency;
-    [SerializeField] private GameObject _hipFireCrosshair;
+    //[SerializeField] private GameObject _hipFireCrosshair;
 
     [Header("Movement")]
     [SerializeField] private JumpTypes _currentJumpType;
@@ -38,7 +39,6 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Jump")]
     [SerializeField] private float _jumpForce;
-    [SerializeField] private float _jumpForceMultiplier;
     [SerializeField] private float _lightGlideDrag;
     [SerializeField] private float _heavyGlideDrag;
     [SerializeField] private float _airMultiplier;
@@ -58,7 +58,6 @@ public class PlayerMovement : MonoBehaviour
     private bool _isGrounded;
     private bool _hasExtrajump;
     private bool _isSwinging;
-    private bool _hasGrapple;
     private bool _canDrawRope = false;
     private Vector3 _swingPoint;
     private Vector3 _currentGrapplePosition;
@@ -71,7 +70,6 @@ public class PlayerMovement : MonoBehaviour
     public Transform orientation;
     public bool IsSwinging => _isSwinging;
     public bool CanDrawRope => _canDrawRope;
-
     public Transform GrapplePos => _grapplePosition;
     public Vector3 GrapplePoint => _swingPoint;
     Vector3 moveDirection;
@@ -83,7 +81,7 @@ public class PlayerMovement : MonoBehaviour
         _cameraToShake = _camera.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
         _rb.freezeRotation = true;
         _maxSpeed = _walkSpeed;
-        Cursor.lockState = CursorLockMode.Locked;
+        //Cursor.lockState = CursorLockMode.Locked;
         _input = new NewControls();
         _input.Enable();
         //_input.Player.Dance1.performed += _ => Dance(Dances.DANCE1);
@@ -93,20 +91,26 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
-        _isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f, _groundLayer);
-
-        Movement();
-        SpeedControl();
-
-        if (_isGrounded && !_isSwinging)
+        if (_connection.isOwned)
         {
-            _hasGrapple = true;
+            gameObject.name = "HOST";
+            _isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f, _groundLayer);
+            Movement();
+            SpeedControl();
+        }
+        else
+        {
+            gameObject.name = "CLIENT";
+            _camera.enabled = false;
         }
     }
 
     private void FixedUpdate()
     {
-        MovePlayer();
+        if (_connection.isOwned)
+        {
+            MovePlayer();
+        }
     }
 
     private void Knife()
@@ -125,18 +129,13 @@ public class PlayerMovement : MonoBehaviour
             _rb.drag = 0;
         }
 
-        if (Input.GetKeyDown(KeyCode.G))
+        if (Input.GetKeyDown(KeyCode.Q))
         {
             StartGrapple();
         }
-        if (Input.GetKeyUp(KeyCode.G))
+        if (Input.GetKeyUp(KeyCode.Q))
         {
             StopGrapple();
-        }
-
-        if (Input.GetKeyDown(KeyCode.Q))
-        {
-            _abilitiesController.Grenade();
         }
 
         if (_isSwinging && _canDrawRope)
@@ -173,7 +172,7 @@ public class PlayerMovement : MonoBehaviour
             DOTween.To(() => _cameraToShake.m_FrequencyGain, x => _cameraToShake.m_FrequencyGain = x, _noiseFrequency, 2.0f)
                 .SetEase(Ease.Linear);
 
-            _hipFireCrosshair.SetActive(false);
+            //_hipFireCrosshair.SetActive(false);
         }
         if (Input.GetKeyUp(KeyCode.LeftShift))
         {
@@ -187,7 +186,7 @@ public class PlayerMovement : MonoBehaviour
                 .SetEase(Ease.Linear);
 
 
-            _hipFireCrosshair.SetActive(true);
+            //_hipFireCrosshair.SetActive(true);
         }
     }
 
@@ -199,6 +198,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (_isGrounded)
         {
+            Debug.Log("MOVE PLAYER: " + gameObject.name);
             _rb.AddForce(moveDirection.normalized * _playerAcceleration * 10f, ForceMode.Force);
         }
         else if (!_isGrounded)
@@ -237,7 +237,7 @@ public class PlayerMovement : MonoBehaviour
         Transform initialPosition = Camera.main.transform;
         _animator.SetBool("IsRunning", false);
 
-        if (_isSwinging || !_hasGrapple)
+        if (_isSwinging)
         {
             return;
         }
@@ -258,7 +258,6 @@ public class PlayerMovement : MonoBehaviour
         _animator.SetBool("IsGrappling", true);
         _maxSpeed = _grappleSpeed;
         _isSwinging = true;
-        _hasGrapple = false;
 
         _joint = gameObject.AddComponent<SpringJoint>();
         _joint.autoConfigureConnectedAnchor = false;
@@ -300,15 +299,14 @@ public class PlayerMovement : MonoBehaviour
         }
         else if (_hasExtrajump)
         {
-            _rb.velocity = new Vector3(_rb.velocity.x, 0, _rb.velocity.z);
             switch (jumpType)
             {
                 case JumpTypes.Double:
-                    _rb.AddForce(transform.up * _jumpForce * _jumpForceMultiplier * 1.2f, ForceMode.Impulse);
+                    _rb.AddForce(transform.up * _jumpForce * 1.5f, ForceMode.Impulse);
                     _hasExtrajump = false;
                     break;
                 case JumpTypes.Triple:
-                    _rb.AddForce(transform.up * _jumpForce * _jumpForceMultiplier, ForceMode.Impulse);
+                    _rb.AddForce(transform.up * _jumpForce, ForceMode.Impulse);
                     _jumpCount++;
                     if (_jumpCount == 2)
                     {
@@ -335,5 +333,4 @@ public class PlayerMovement : MonoBehaviour
             _hasExtrajump = false;
         }
     }
-
 }

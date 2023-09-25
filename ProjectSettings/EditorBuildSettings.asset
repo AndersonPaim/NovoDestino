@@ -6,6 +6,11 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/_Project/Scenes/Game.unity
-    guid: 99c9720ab356a0642a771bea13969a05
-  m_configObjects: {}
+    path: Assets/_Project/Scenes/Orbit.unity
+    guid: 61233e8cc05e2964ebba5a50694848ec
+  - enabled: 1
+    path: Assets/_Project/Scenes/Movement.unity
+    guid: 981c0833db4a718448fadb9a604bcd92
+  m_configObjects:
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: ffb7023d6026f9a42b975b114d887190,
+      type: 2}

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Mirror.Examples.Pong;
 using UnityEngine;
 
 public class MoveCamera : MonoBehaviour

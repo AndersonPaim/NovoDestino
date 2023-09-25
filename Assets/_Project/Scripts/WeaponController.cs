@@ -3,7 +3,6 @@ using UnityEngine;
 using Cinemachine;
 using TMPro;
 using DG.Tweening;
-using UnityEditor.Experimental.GraphView;
 
 public class WeaponController : MonoBehaviour
 {
@@ -21,7 +20,7 @@ public class WeaponController : MonoBehaviour
     [SerializeField] private float _magazine;
     [SerializeField] private float _damage;
     [SerializeField] private DamageType _damageType;
-    [SerializeField] private TextMeshProUGUI _bulletsText;
+    //[SerializeField] private TextMeshProUGUI _bulletsText;
     [SerializeField] private AudioClip _audioClip;
     [SerializeField] private AudioObj _audioObj;
 
@@ -38,7 +37,7 @@ public class WeaponController : MonoBehaviour
     public void ReloadWeapon()
     {
         _bullets = _magazine;
-        _bulletsText.text = _bullets.ToString();
+        //_bulletsText.text = _bullets.ToString();
         _isReloading = false;
     }
 
@@ -73,7 +72,7 @@ public class WeaponController : MonoBehaviour
             bullet.Shoot(_shootForce, _damage, _damageType);
             _shootParticle.Play();
             _bullets--;
-            _bulletsText.text = _bullets.ToString();
+            //_bulletsText.text = _bullets.ToString();
         }
     }
 
@@ -90,7 +89,7 @@ public class WeaponController : MonoBehaviour
         _input.Player.Reload.performed += _ => Reload();
 
         _bullets = _magazine;
-        _bulletsText.text = _bullets.ToString();
+        //_bulletsText.text = _bullets.ToString();
     }
 
     private void Reload()
