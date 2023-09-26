@@ -1,10 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
+using Mirror;
+using Mirror.Examples.Pong;
 using UnityEngine;
 
-public class GrappleRope : MonoBehaviour
+public class GrappleRope : NetworkBehaviour
 {
     [SerializeField] private PlayerMovement _playerMovement;
+    [SerializeField] private PlayerConnection _playerConnection;
+    public SyncList<Vector3> _linePoints = new SyncList<Vector3>();
 
     [Header("Settings")]
     public int _quality = 200;
@@ -19,19 +23,39 @@ public class GrappleRope : MonoBehaviour
     private LineRenderer _lineRenderer;
     private Vector3 _currentGrapplePosition;
 
+    private void ClientDrawRope(uint id)
+    {
+        if (!_playerConnection.isLocalPlayer && id == _playerConnection.netId)
+        {
+            Debug.Log(gameObject.name + " RECEIVE RPC: " + _playerConnection.isLocalPlayer);
+            DrawRope();
+        }
+    }
+
     private void Awake()
     {
         _lineRenderer = GetComponent<LineRenderer>();
         _spring = new Spring_MLab();
         _spring.SetTarget(0);
+        PlayerConnection.OnDrawRope += ClientDrawRope;
     }
 
     private void LateUpdate()
     {
-        DrawRope();
+        StartDrawRope();
+
+        if (!_playerConnection.isOwned)
+        {
+            _lineRenderer.positionCount = _linePoints.Count;
+
+            for (int i = 0; i < _linePoints.Count; i++)
+            {
+                _lineRenderer.SetPosition(i, _linePoints[i]);
+            }
+        }
     }
 
-    private void DrawRope()
+    private void StartDrawRope()
     {
         if (!_playerMovement.IsSwinging && !_playerMovement.CanDrawRope)
         {
@@ -42,6 +66,7 @@ public class GrappleRope : MonoBehaviour
             if (_lineRenderer.positionCount > 0)
             {
                 _lineRenderer.positionCount = 0;
+                UpdateServerRope();
             }
 
             return;
@@ -52,6 +77,14 @@ public class GrappleRope : MonoBehaviour
             return;
         }
 
+        if (_playerConnection.isOwned)
+        {
+            DrawRope();
+        }
+    }
+
+    private void DrawRope()
+    {
         if (_lineRenderer.positionCount == 0)
         {
             _spring.SetVelocity(_velocity);
@@ -74,6 +107,43 @@ public class GrappleRope : MonoBehaviour
             float delta = i / (float)_quality;
             Vector3 offset = up * _waveHeight * Mathf.Sin(delta * _waveCount * Mathf.PI) * _spring.Value * _affectCurve.Evaluate(delta);
             _lineRenderer.SetPosition(i, Vector3.Lerp(gunTipPosition, _currentGrapplePosition, delta) + offset);
+        }
+
+        UpdateServerRope();
+    }
+
+    private void UpdateServerRope()
+    {
+        Vector3[] pos = new Vector3[_lineRenderer.positionCount];
+        _lineRenderer.GetPositions(pos);
+        DefineLineRenderer(pos);
+    }
+
+    [Server]
+    private void SendLineRenderer(Vector3[] points)
+    {
+        for (int i = 0; i < points.Length; i++)
+        {
+            if (_linePoints.Count <= i)
+            {
+                _linePoints.Add(points[i]);
+            }
+            else
+            {
+                _linePoints[i] = points[i];
+            }
+        }
+
+        Debug.Log("GRAPPLE SEND: " + _linePoints.Count);
+    }
+
+    [Command]
+    private void DefineLineRenderer(Vector3[] points)
+    {
+        if (NetworkClient.isConnected)
+        {
+            SendLineRenderer(points);
+            Debug.Log("GRAPPLE DEFINE");
         }
     }
 }

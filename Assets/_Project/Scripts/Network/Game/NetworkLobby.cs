@@ -104,11 +104,11 @@ public class NetworkLobby : NetworkBehaviour
 3
         _playersConfirmed.Add(player.PlayerName, lobbyPlayer);*/
 
-        if (_readyPlayers == 2)
-        {
-            _canStart = true;
-            StartCoroutine(StartGame());
-        }
+        //if (_readyPlayers == 2)
+        //{
+        _canStart = true;
+        StartCoroutine(StartGame());
+        //}
     }
 
     private void RemoveReady(Player player)

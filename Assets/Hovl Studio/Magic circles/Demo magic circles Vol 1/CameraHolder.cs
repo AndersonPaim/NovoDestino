@@ -96,7 +96,7 @@ public class CameraHolder : MonoBehaviour
             Destroy(Instance);
         }
         Instance = Instantiate(Prefabs[Prefab]);
-        particleSystems = Instance.GetComponentsInChildren<ParticleSystem>(); //Get color from current instance 
+        particleSystems = Instance.GetComponentsInChildren<ParticleSystem>(); //Get color from current instance
         svList.Clear();
         foreach (var ps in particleSystems)
         {
@@ -123,8 +123,8 @@ public class CameraHolder : MonoBehaviour
             if (Screen.dpi < 200) dpiScale = 1;
             else dpiScale = Screen.dpi / 200f;
             if (pos.x < 380 * dpiScale && Screen.height - pos.y < 250 * dpiScale) return;
-            Cursor.visible = false;
-            Cursor.lockState = CursorLockMode.Locked;
+            //Cursor.visible = false;
+            //Cursor.lockState = CursorLockMode.Locked;
             x += (float)(Input.GetAxis("Mouse X") * xRotate * 0.02);
             y -= (float)(Input.GetAxis("Mouse Y") * yRotate * 0.02);
             y = ClampAngle(y, yMinLimit, yMaxLimit);
@@ -136,7 +136,7 @@ public class CameraHolder : MonoBehaviour
         else
         {
             Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
+            //Cursor.lockState = CursorLockMode.None;
         }
 
         if (prevDistance != currDistance)

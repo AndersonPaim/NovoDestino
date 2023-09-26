@@ -21,6 +21,7 @@ public class PlayerMovement : NetworkBehaviour
 
     [SerializeField] private PlayerConnection _connection;
     [SerializeField] private WeaponController _weaponController;
+    [SerializeField] private AbilitiesController _abilitiesController;
     [SerializeField] private LayerMask _groundLayer;
 
     [Header("Camera")]
@@ -81,7 +82,6 @@ public class PlayerMovement : NetworkBehaviour
         _cameraToShake = _camera.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
         _rb.freezeRotation = true;
         _maxSpeed = _walkSpeed;
-        //Cursor.lockState = CursorLockMode.Locked;
         _input = new NewControls();
         _input.Enable();
         //_input.Player.Dance1.performed += _ => Dance(Dances.DANCE1);
@@ -129,13 +129,23 @@ public class PlayerMovement : NetworkBehaviour
             _rb.drag = 0;
         }
 
-        if (Input.GetKeyDown(KeyCode.Q))
+        if (!isLocalPlayer)
+        {
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.G))
         {
             StartGrapple();
         }
-        if (Input.GetKeyUp(KeyCode.Q))
+        if (Input.GetKeyUp(KeyCode.G))
         {
             StopGrapple();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            _abilitiesController.Grenade();
         }
 
         if (_isSwinging && _canDrawRope)

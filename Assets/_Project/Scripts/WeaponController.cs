@@ -3,9 +3,11 @@ using UnityEngine;
 using Cinemachine;
 using TMPro;
 using DG.Tweening;
+using Mirror.Examples.Pong;
 
 public class WeaponController : MonoBehaviour
 {
+    [SerializeField] private PlayerConnection _connection;
     [SerializeField] private CinemachineVirtualCamera _eyeCamera;
     [SerializeField] private CinemachineVirtualCamera _scopeCamera;
     [SerializeField] private PlayerCam _playerCam;
@@ -78,7 +80,15 @@ public class WeaponController : MonoBehaviour
 
     private void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
+        if (_connection.isOwned)
+        {
+            gameObject.name = "HOST";
+        }
+        else
+        {
+            gameObject.name = "CLIENT";
+        }
+        //Cursor.lockState = CursorLockMode.Locked;
         _animator = GetComponent<Animator>();
         _input = new NewControls();
         _input.Enable();

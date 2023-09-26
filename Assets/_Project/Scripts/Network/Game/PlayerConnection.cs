@@ -17,6 +17,8 @@ namespace Mirror.Examples.Pong
         public static ReadyHandler OnRemoveReady;
         public delegate void PlayerDeadHandler(Player player);
         public static PlayerDeadHandler OnPlayerDead;
+        public delegate void DrawRopeHandler(uint id);
+        public static DrawRopeHandler OnDrawRope;
 
         public TextMeshProUGUI isReady;
         public TextMeshProUGUI isLocal;
@@ -182,6 +184,18 @@ namespace Mirror.Examples.Pong
             NetworkServer.Spawn(obj);*/
         }
 
+        [Command]
+        public void CmdDrawRope(uint id)
+        {
+            RpcDrawRope(id);
+        }
+
+        [ClientRpc]
+        public void RpcDrawRope(uint id)
+        {
+            OnDrawRope?.Invoke(id);
+        }
+
         [ClientRpc]
         public void RpcAddReady(Player player)
         {
@@ -199,6 +213,9 @@ namespace Mirror.Examples.Pong
         {
             OnPlayerDead?.Invoke(player);
         }
+
+
+
 
     }
 }
