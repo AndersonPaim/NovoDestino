@@ -20,10 +20,14 @@ public class Bullet : MonoBehaviour
             gameObject.transform.LookAt(hit.point);
 
             ParticleSystem hitParticle = Instantiate(_hitParticle, hit.point, _hitParticle.transform.rotation);
+            hitParticle.transform.LookAt(Camera.main.transform.position);
+            hitParticle.transform.Translate(Vector3.forward * 0.5f);
             hitParticle.Play();
 
             float totalDuration = hitParticle.main.duration + hitParticle.main.startDelay.constant;
             DestroyDelay(hitParticle.gameObject, totalDuration);
+            Destroy(gameObject);
+            Debug.Log("Entrou");
         }
 
         if (gameObject.transform != null)

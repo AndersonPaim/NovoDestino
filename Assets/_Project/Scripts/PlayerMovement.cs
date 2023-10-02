@@ -33,7 +33,6 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float _walkSpeed;
     [SerializeField] private float _runSpeed;
     [SerializeField] private float _slideSpeed;
-    [SerializeField] private float _crouchSpeed;
     [SerializeField] private float _grappleSpeed;
     [SerializeField] private float _playerAcceleration;
     [SerializeField] private float _groundedDrag;
@@ -195,7 +194,7 @@ public class PlayerMovement : MonoBehaviour
             _hipFireCrosshair.SetActive(true);
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftAlt))
+        if (Input.GetKeyDown(KeyCode.LeftControl))
         {
             if (_maxSpeed == _runSpeed)
             {
@@ -204,16 +203,17 @@ public class PlayerMovement : MonoBehaviour
             else
             {
                 _animator.SetBool("IsCrouching", true);
+                DOTween.KillAll();
                 _cameraToShake.m_AmplitudeGain = 0;
                 _cameraToShake.m_FrequencyGain = 0;
-                _maxSpeed = _crouchSpeed;
+                _maxSpeed = _walkSpeed;
             }
 
         }
 
-        if (Input.GetKeyUp(KeyCode.LeftAlt))
+        if (Input.GetKeyUp(KeyCode.LeftControl))
         {
-            if (_maxSpeed == _crouchSpeed)
+            if (_maxSpeed == _walkSpeed)
             {
                 _animator.SetBool("IsCrouching", false);
                 _maxSpeed = _walkSpeed;
@@ -223,9 +223,13 @@ public class PlayerMovement : MonoBehaviour
             else if (_maxSpeed == _slideSpeed)
             {
                 _animator.SetBool("IsCrouching", false);
-                _animator.SetBool("IsRunning", true);
                 _maxSpeed = _runSpeed;
                 _hipFireCrosshair.SetActive(false);
+            }
+            else
+            {
+                _animator.SetBool("IsCrouching", false);
+                _maxSpeed = _walkSpeed;
             }
         }
     }
@@ -383,13 +387,14 @@ public class PlayerMovement : MonoBehaviour
         _maxSpeed = _slideSpeed;
         _hipFireCrosshair.SetActive(true);
 
+        DOTween.KillAll();
         _cameraToShake.m_AmplitudeGain = 0;
         _cameraToShake.m_FrequencyGain = 0;
 
         _rb.AddForce(orientation.forward * _playerAcceleration * 30f, ForceMode.Force);
 
         await Task.Delay(1000);
-        _maxSpeed = _crouchSpeed;
+        _maxSpeed = _walkSpeed;
     }
 
 }

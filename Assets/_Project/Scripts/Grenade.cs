@@ -40,7 +40,6 @@ public class Grenade : MonoBehaviour
 
         foreach (Collider nearObject in nearObjects)
         {
-            Debug.Log(nearObject.gameObject.name);
             Rigidbody objectRb = nearObject.GetComponent<Rigidbody>();
 
             if (objectRb != null)

@@ -24254,7 +24254,6 @@ MonoBehaviour:
   _walkSpeed: 8
   _runSpeed: 10
   _slideSpeed: 20
-  _crouchSpeed: 4
   _grappleSpeed: 20
   _playerAcceleration: 7
   _groundedDrag: 5
