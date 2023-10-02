@@ -27,7 +27,6 @@ public class Bullet : MonoBehaviour
             float totalDuration = hitParticle.main.duration + hitParticle.main.startDelay.constant;
             DestroyDelay(hitParticle.gameObject, totalDuration);
             Destroy(gameObject);
-            Debug.Log("Entrou");
         }
 
         if (gameObject.transform != null)

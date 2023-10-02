@@ -130,6 +130,7 @@ public class PlayerMovement : MonoBehaviour
         {
             StartGrapple();
         }
+
         if (Input.GetKeyUp(KeyCode.G))
         {
             StopGrapple();
@@ -320,17 +321,15 @@ public class PlayerMovement : MonoBehaviour
 
     private void StopGrapple()
     {
-        if (_isSwinging)
-        {
-            DOTween.To(() => _camera.m_Lens.FieldOfView, x => _camera.m_Lens.FieldOfView = x, _defaultFov, 0.5f)
-                .SetEase(Ease.Linear);
+        StopCoroutine(StartDrawRopeDelay());
+        DOTween.To(() => _camera.m_Lens.FieldOfView, x => _camera.m_Lens.FieldOfView = x, _defaultFov, 0.5f)
+            .SetEase(Ease.Linear);
 
-            _animator.SetBool("IsGrappling", false);
-            Destroy(_joint);
-            _isSwinging = false;
-            _canDrawRope = false;
-            _maxSpeed = _walkSpeed;
-        }
+        _animator.SetBool("IsGrappling", false);
+        Destroy(_joint);
+        _isSwinging = false;
+        _canDrawRope = false;
+        _maxSpeed = _walkSpeed;
     }
 
     private void Jump(JumpTypes jumpType)
