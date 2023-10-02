@@ -1,7 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
+using DG.Tweening;
 
 public class Bullet : MonoBehaviour
 {
@@ -11,33 +10,48 @@ public class Bullet : MonoBehaviour
 
     private Rigidbody _rb;
     private DamageType _damageType;
+    private RaycastHit hit;
     private float _damage;
 
     public void Shoot(float shootForce, float damage, DamageType damageType)
     {
-        _rb = GetComponent<Rigidbody>();
-        _rb.AddForce(transform.forward * shootForce);
-        DestroyDelay();
+        if (Physics.Raycast(Camera.main.transform.position, Camera.main.transform.forward, out hit, 200))
+        {
+            gameObject.transform.LookAt(hit.point);
+
+            ParticleSystem hitParticle = Instantiate(_hitParticle, hit.point, _hitParticle.transform.rotation);
+            hitParticle.Play();
+
+            float totalDuration = hitParticle.main.duration + hitParticle.main.startDelay.constant;
+            DestroyDelay(hitParticle.gameObject, totalDuration);
+        }
+
+        if (gameObject.transform != null)
+        {
+            gameObject.transform.DOMove(hit.point, hit.distance / shootForce);
+        }
+
+        DestroyDelay(gameObject, _destroyTime);
         _damageType = damageType;
         _damage = damage;
     }
 
-    private async void DestroyDelay()
+    private async void DestroyDelay(GameObject whatToDestroy, float delay)
     {
-        await Task.Delay((int)_destroyTime * 1000);
-        Destroy(gameObject);
+        await Task.Delay((int)delay * 1000);
+
+        if (whatToDestroy != null)
+        {
+            Destroy(whatToDestroy);
+        }
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void Update()
     {
-        _hitParticle.Play();
-        // _collider.enabled = false;
-
-        IDamageable damageable = other.GetComponent<IDamageable>();
-
-        if (damageable != null)
+        float distanceToTarget = Vector3.Distance(hit.point, transform.position);
+        if (distanceToTarget <= 10 && gameObject != null)
         {
-            damageable.ReceiveDamage(_damage, _damageType, transform.position);
+            Destroy(gameObject);
         }
     }
 }

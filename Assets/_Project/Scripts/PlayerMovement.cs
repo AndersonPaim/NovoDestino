@@ -32,6 +32,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private JumpTypes _currentJumpType;
     [SerializeField] private float _walkSpeed;
     [SerializeField] private float _runSpeed;
+    [SerializeField] private float _slideSpeed;
+    [SerializeField] private float _crouchSpeed;
     [SerializeField] private float _grappleSpeed;
     [SerializeField] private float _playerAcceleration;
     [SerializeField] private float _groundedDrag;
@@ -161,9 +163,10 @@ public class PlayerMovement : MonoBehaviour
             Jump(_currentJumpType);
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftShift))
+        if (Input.GetKey(KeyCode.LeftShift) && _maxSpeed == _walkSpeed)
         {
             _maxSpeed = _runSpeed;
+            _animator.SetBool("IsCrouching", false);
             _animator.SetBool("IsRunning", true);
             _weaponController.StopAim();
 
@@ -174,8 +177,10 @@ public class PlayerMovement : MonoBehaviour
                 .SetEase(Ease.Linear);
 
             _hipFireCrosshair.SetActive(false);
+
         }
-        if (Input.GetKeyUp(KeyCode.LeftShift))
+
+        if (Input.GetKeyUp(KeyCode.LeftShift) && _maxSpeed == _runSpeed)
         {
             _maxSpeed = _walkSpeed;
             _animator.SetBool("IsRunning", false);
@@ -188,6 +193,40 @@ public class PlayerMovement : MonoBehaviour
 
 
             _hipFireCrosshair.SetActive(true);
+        }
+
+        if (Input.GetKeyDown(KeyCode.LeftAlt))
+        {
+            if (_maxSpeed == _runSpeed)
+            {
+                StartSlide();
+            }
+            else
+            {
+                _animator.SetBool("IsCrouching", true);
+                _cameraToShake.m_AmplitudeGain = 0;
+                _cameraToShake.m_FrequencyGain = 0;
+                _maxSpeed = _crouchSpeed;
+            }
+
+        }
+
+        if (Input.GetKeyUp(KeyCode.LeftAlt))
+        {
+            if (_maxSpeed == _crouchSpeed)
+            {
+                _animator.SetBool("IsCrouching", false);
+                _maxSpeed = _walkSpeed;
+                _cameraToShake.m_AmplitudeGain = 0;
+                _cameraToShake.m_FrequencyGain = 0;
+            }
+            else if (_maxSpeed == _slideSpeed)
+            {
+                _animator.SetBool("IsCrouching", false);
+                _animator.SetBool("IsRunning", true);
+                _maxSpeed = _runSpeed;
+                _hipFireCrosshair.SetActive(false);
+            }
         }
     }
 
@@ -334,6 +373,23 @@ public class PlayerMovement : MonoBehaviour
             //_rb.drag = 0;
             _hasExtrajump = false;
         }
+    }
+
+    private async void StartSlide()
+    {
+        _animator.SetBool("IsCrouching", true);
+        _animator.SetBool("IsRunning", false);
+
+        _maxSpeed = _slideSpeed;
+        _hipFireCrosshair.SetActive(true);
+
+        _cameraToShake.m_AmplitudeGain = 0;
+        _cameraToShake.m_FrequencyGain = 0;
+
+        _rb.AddForce(orientation.forward * _playerAcceleration * 30f, ForceMode.Force);
+
+        await Task.Delay(1000);
+        _maxSpeed = _crouchSpeed;
     }
 
 }

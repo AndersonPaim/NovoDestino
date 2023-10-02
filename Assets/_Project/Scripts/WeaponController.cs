@@ -62,14 +62,13 @@ public class WeaponController : MonoBehaviour
         }
         else
         {
-            Bullet bullet = Instantiate(_bulletPrefab);
+            Bullet bullet = Instantiate(_bulletPrefab, _bulletPosition.position, _bulletPosition.rotation);
 
             AudioObj audio = Instantiate(_audioObj);
             audio.transform.position = transform.position;
             audio.Initialize(_audioClip);
 
-            bullet.transform.localPosition = _bulletPosition.transform.position;
-            bullet.transform.localRotation = _bulletPosition.transform.rotation;
+            bullet.transform.SetLocalPositionAndRotation(_bulletPosition.position, _bulletPosition.rotation);
             bullet.Shoot(_shootForce, _damage, _damageType);
             _shootParticle.Play();
             _bullets--;
